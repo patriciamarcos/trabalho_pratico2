@@ -1,6 +1,7 @@
 import pandas as pd
+
 from datetime import datetime
-import numpy as np
+
 
 #Recolha de dados
 dados1 = pd.read_csv('California_Houses.csv')
@@ -50,11 +51,6 @@ dados2['YearBuilt'] = ano_atual - dados2['YearBuilt']
 df_combinado = pd.concat([dados1, dados2], axis=0)
 
 
-# Eliminar colunas desnecessárias
-colunas_eliminar = ['Median_Income','Population','Households','Distance_to_LA','Distance_to_SanDiego','Distance_to_SanJose','Distance_to_SanFrancisco','Suburb','Type','Method','Postcode','SellerG','Date','Car','CouncilArea','Regionname','Propertycount','ParkingArea','BuildingArea']
-df_combinado.drop(columns=colunas_eliminar, inplace=True)
-
-
 #rename colunas identicas mas com nomes diferentes
 df_combinado.rename(columns={'Median_House_Value': 'Price', 'Median_Age': 'Age', 'Tot_Rooms': 'Rooms','Tot_Bedrooms': 'Bedroom', 'Distance_to_coast': 'Distance_coast', 'YearBuilt': 'Age', 'Longtitude': 'Longitude', 'Distance': 'Distance_coast'}, inplace=True)
 
@@ -99,10 +95,5 @@ df_combinado.to_csv('dados_integrados.csv', index=False)
 
 
 
-print(df_combinado.head())
 
-
-
-# Salvar o DataFrame combinado em um arquivo CSV
-df_combinado.to_csv('dados_integrados.csv', index=False)
 
