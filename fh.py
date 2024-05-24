@@ -1,6 +1,8 @@
 import pandas as pd
 from datetime import datetime
 import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
 
 #Recolha de dados
 dados1 = pd.read_csv('California_Houses.csv')
@@ -57,7 +59,33 @@ print(df_combinado.head())
 # Salvar o DataFrame combinado em um arquivo CSV
 df_combinado.to_csv('dados_integrados.csv', index=False)
 
+#Correlações com a variável objetivo(price)
+colunas_para_analise = df_combinado.columns.difference(['Address',])
+#mostrar  gráficos da correlação
+for coluna in colunas_para_analise:
+    correlacao = df_combinado[coluna].corr(df_combinado['Price'])
+    plt.figure()
+    plt.bar(coluna, correlacao)
+    plt.title(f'Correlação com {coluna}')
+    plt.xlabel('Price')
+    plt.ylabel('Correlação')
+    plt.ylim(-1, 1)
+    plt.grid(axis='y')
+    plt.show()
 
+#Normalização de Dados por Min-Max Scaling
+scaler = MinMaxScaler()
+colunas_para_normalizar = df_combinado.columns.difference(['Address'])
+df_combinado[colunas_para_normalizar] = scaler.fit_transform(df_combinado[colunas_para_normalizar])
+
+#mostrar graficos a normalização
+colunas_para_plotar = df_combinado.columns.difference(['Address'])
+for coluna in colunas_para_plotar:
+    plt.hist(df_combinado[coluna])
+    plt.xlabel('Valores Normalizados')
+    plt.ylabel('Frequência')
+    plt.title(f'Distribuição dos Valores Normalizados para a coluna {coluna}')
+    plt.show()
 
 
 
