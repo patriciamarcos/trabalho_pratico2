@@ -4,12 +4,13 @@ from sklearn.model_selection import cross_val_score, LeaveOneOut, KFold
 from sklearn.metrics import mean_squared_error
 from sklearn.linear_model import LinearRegression
 from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
 
 # Carregar os dados do arquivo CSV (substitua 'dados_integrados.csv' pelo nome do seu arquivo)
 data = pd.read_csv('dados_integrados.csv')
 
 # Excluir a coluna que você não quer usar
-data.drop(columns=['Address'], inplace=True)  # Substitua 'Address' pelo nome da coluna que deseja excluir
+data.drop(columns=['Address'], inplace=True)
 
 # Remover linhas com valores ausentes na variável alvo (Price)
 data.dropna(subset=['Price'], inplace=True)
@@ -31,6 +32,10 @@ if np.isnan(features_imputed).any():
 # Verificar se há valores ausentes na variável alvo
 if target.isnull().any():
     raise ValueError("Existem valores ausentes na variável alvo. Verifique seus dados.")
+
+# Escalar os dados
+scaler = StandardScaler()
+features_scaled = scaler.fit_transform(features_imputed)
 
 # Criar uma instância do modelo de regressão linear
 model = LinearRegression()
