@@ -1,0 +1,7 @@
+Age
+Bathroom
+Bedroom
+Distance_coast
+Landsize
+Longitude
+Rooms

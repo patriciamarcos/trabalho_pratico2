@@ -2,7 +2,8 @@ import pandas as pd
 from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
+import joblib
 
 #Recolha de dados
 dados1 = pd.read_csv('California_Houses.csv')
@@ -30,7 +31,6 @@ df_combinado = df_combinado.groupby(df_combinado.columns, axis=1).sum()
 print(df_combinado.head())
 
 # Preencher Colunas Vazias com a Mediana
-
 for column in df_combinado.columns:
     if df_combinado[column].isnull().sum() > 0:
         median_value = df_combinado[column].median()
@@ -38,7 +38,6 @@ for column in df_combinado.columns:
 
 # Outliers
 factor = 1.5
-
 outliers_por_coluna = {}
 
 for coluna in df_combinado.select_dtypes(include=np.number).columns:
@@ -59,34 +58,24 @@ print(df_combinado.head())
 # Salvar o DataFrame combinado em um arquivo CSV
 df_combinado.to_csv('dados_integrados.csv', index=False)
 
-#Correlações com a variável objetivo(price)
-colunas_para_analise = df_combinado.columns.difference(['Address',])
-#mostrar  gráficos da correlação
-for coluna in colunas_para_analise:
-    correlacao = df_combinado[coluna].corr(df_combinado['Price'])
-    plt.figure()
-    plt.bar(coluna, correlacao)
-    plt.title(f'Correlação com {coluna}')
-    plt.xlabel('Price')
-    plt.ylabel('Correlação')
-    plt.ylim(-1, 1)
-    plt.grid(axis='y')
-    plt.show()
-
-#Normalização de Dados por Min-Max Scaling
-scaler = MinMaxScaler()
-colunas_para_normalizar = df_combinado.columns.difference(['Address'])
+# Normalização de Dados por StandardScaler
+scaler = StandardScaler()
+colunas_para_normalizar = df_combinado.columns.difference(['Address', 'Latitude', 'Price'])
 df_combinado[colunas_para_normalizar] = scaler.fit_transform(df_combinado[colunas_para_normalizar])
 
+# Salvar o objeto scaler treinado
+joblib.dump(scaler, 'standard_scaler.pkl')
+
+# Salvar as colunas usadas no scaler
+with open('scaler_columns.txt', 'w') as f:
+    for col in colunas_para_normalizar:
+        f.write(col + '\n')
+
 #mostrar graficos a normalização
-colunas_para_plotar = df_combinado.columns.difference(['Address'])
+colunas_para_plotar = df_combinado.columns.difference(['Address', 'Latitude'])
 for coluna in colunas_para_plotar:
     plt.hist(df_combinado[coluna])
     plt.xlabel('Valores Normalizados')
     plt.ylabel('Frequência')
     plt.title(f'Distribuição dos Valores Normalizados para a coluna {coluna}')
     plt.show()
-
-
-
-

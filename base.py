@@ -1,55 +1,76 @@
-import pandas as pd
 import numpy as np
-from sklearn.model_selection import cross_val_score, LeaveOneOut, KFold
-from sklearn.metrics import mean_squared_error
-from sklearn.linear_model import LinearRegression
-from sklearn.impute import SimpleImputer
+import pandas as pd
+from sklearn.model_selection import train_test_split, GridSearchCV, KFold
+from sklearn.neural_network import MLPRegressor
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error, r2_score
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+import joblib
 
-# Carregar os dados do arquivo CSV (substitua 'dados_integrados.csv' pelo nome do seu arquivo)
-data = pd.read_csv('dados_integrados.csv')
+# Suprimindo avisos desnecessários
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-# Excluir a coluna que você não quer usar
-data.drop(columns=['Address'], inplace=True)
+# Carregar os dados (substitua o caminho pelo seu dataset)
+df = pd.read_csv('dados_integrados.csv')
+df.drop(columns=['Address', 'Latitude'], inplace=True)
+df.dropna(subset=['Price'], inplace=True)
+X = df.drop(columns=['Price'])
+y = df['Price']
 
-# Remover linhas com valores ausentes na variável alvo (Price)
-data.dropna(subset=['Price'], inplace=True)
+# Carregar o scaler treinado
+scaler = joblib.load('standard_scaler.pkl')
 
-# Separar as características (features) dos valores alvo (target)
-features = data.drop(columns=['Price'])  # Supondo que 'Price' seja a coluna que contém o preço do imóvel
-target = data['Price']
+# Carregar as colunas usadas no scaler
+with open('scaler_columns.txt', 'r') as f:
+    scaler_columns = [line.strip() for line in f]
 
-# Criar um objeto SimpleImputer
-imputer = SimpleImputer(strategy='mean')
+# Verificar se as colunas batem
+print(f'Colunas usadas no scaler: {scaler_columns}')
+print(f'Colunas presentes nos dados: {list(X.columns)}')
 
-# Aplicar a imputação nos dados
-features_imputed = imputer.fit_transform(features)
+# Ajustar a ordem das colunas de X para bater com as do scaler
+X = X[scaler_columns]
 
-# Verificar se há valores ausentes nas características após a imputação
-if np.isnan(features_imputed).any():
-    raise ValueError("Existem valores ausentes nas características após a imputação. Verifique seus dados.")
+# Aplicar a normalização aos dados
+X_scaled = scaler.transform(X)
 
-# Verificar se há valores ausentes na variável alvo
-if target.isnull().any():
-    raise ValueError("Existem valores ausentes na variável alvo. Verifique seus dados.")
+# Dividir os dados em conjuntos de treinamento e teste
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
 
-# Escalar os dados
-scaler = StandardScaler()
-features_scaled = scaler.fit_transform(features_imputed)
+# Criar o pipeline
+pipeline = Pipeline([
+    ('mlp', MLPRegressor(max_iter=2000))  # Aumentar o número de iterações para melhorar a convergência
+])
 
-# Criar uma instância do modelo de regressão linear
-model = LinearRegression()
+# Definir o grid de hiperparâmetros simplificado
+param_grid = {
+    'mlp__hidden_layer_sizes': [(50,), (100,)],  # Simplificar o número de combinações
+    'mlp__activation': ['relu'],
+    'mlp__solver': ['adam'],
+    'mlp__alpha': [0.0001, 0.001],
+    'mlp__learning_rate_init': [0.001, 0.0001]  # Adicionar taxas de aprendizado menores
+}
 
-# Abordagem K-Fold Cross-Validation
-kfold = KFold(n_splits=5, shuffle=True, random_state=42)
-scores_kfold = -cross_val_score(model, features_imputed, target, cv=kfold, scoring='neg_mean_squared_error')
-mse_kfold = scores_kfold.mean()
+# Configurar o GridSearchCV com KFold
+kf = KFold(n_splits=3, shuffle=True, random_state=42)
+grid_search = GridSearchCV(pipeline, param_grid, cv=kf, verbose=2, n_jobs=-1)
 
-# Abordagem Leave-One-Out Cross-Validation (LOOCV)
-loo = LeaveOneOut()
-scores_loo = -cross_val_score(model, features_imputed, target, cv=loo, scoring='neg_mean_squared_error')
-mse_loo = scores_loo.mean()
+# Treinar o modelo
+grid_search.fit(X_train, y_train)
 
-# Exibindo as médias dos erros quadráticos médios (MSE)
-print("MSE médio (K-Fold):", mse_kfold)
-print("MSE médio (LOOCV):", mse_loo)
+# Resultados do melhor modelo
+print("Best parameters found: ", grid_search.best_params_)
+print("Best cross-validation score: ", grid_search.best_score_)
+
+# Prever no conjunto de teste
+y_pred = grid_search.predict(X_test)
+
+# Avaliar o modelo
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print(f'Mean Squared Error: {mse}')
+print(f'R^2 Score: {r2}')
