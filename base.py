@@ -12,7 +12,7 @@ from sklearn.model_selection import learning_curve
 from sklearn.model_selection import validation_curve
 
 
-# Carregar os dados (substitua o caminho pelo seu dataset)
+# Carregar os dados
 df = pd.read_csv('dados_integrados.csv')
 df.drop(columns=['Address', 'Latitude'], inplace=True)
 df.dropna(subset=['Price'], inplace=True)
@@ -46,11 +46,10 @@ pipeline = Pipeline([
 
 # Definir o grid de hiperparâmetros simplificado
 param_grid = {
-    'mlp__hidden_layer_sizes': [(50,), (100,)],  # Simplificar o número de combinações
-    'mlp__activation': ['relu'],
+    'mlp__hidden_layer_sizes': [(50,), (100,)],
     'mlp__solver': ['adam'],
     'mlp__alpha': [0.0001, 0.001],
-    'mlp__learning_rate_init': [0.001, 0.0001]  # Adicionar taxas de aprendizado menores
+    'mlp__learning_rate_init': [0.001, 0.0001]
 }
 
 # Configurar o GridSearchCV com KFold
